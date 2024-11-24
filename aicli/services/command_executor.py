@@ -18,28 +18,25 @@ Security Note:
 
 import subprocess
 import click
-from typing import Optional
+import re
 
 class CommandExecutor:
     def run(self, command: str) -> None:
         """Execute the shell command"""
+        # Strip markdown code block formatting if present
+        command = re.sub(r'^```\w*\n|```$', '', command.strip())
+        command = command.strip()
+        
         try:
-            click.secho(f"\nExecuting: {command}", fg="blue")
+            click.echo(f"\nExecuting: {command}\n")
             click.echo("=" * 40)
+            click.echo()
             
-            result = subprocess.run(
-                command,
-                shell=True,
-                text=True,
-                capture_output=True
-            )
-            
+            result = subprocess.run(command, shell=True, text=True, capture_output=True)
             if result.stdout:
                 click.echo(result.stdout)
-            
             if result.stderr:
-                click.secho("Errors:", fg="red", err=True)
-                click.secho(result.stderr, fg="red", err=True)
+                click.secho(f"Errors:\n{result.stderr}", fg="red", err=True)
                 
         except Exception as e:
             click.secho(f"Error executing command: {str(e)}", fg="red", err=True) 

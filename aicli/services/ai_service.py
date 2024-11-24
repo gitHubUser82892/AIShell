@@ -34,7 +34,7 @@ class AIService:
         )
 
         response = self.client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": query}
