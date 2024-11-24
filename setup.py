@@ -1,4 +1,7 @@
 """
+Copyright (c) 2024 Ryan Mayor
+Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 AICLI - AI-powered Command Line Assistant
 
 A command-line tool that uses OpenAI to help generate and execute shell commands.

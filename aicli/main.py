@@ -1,5 +1,20 @@
 """
-Main CLI Module
+Copyright (c) 2024 Ryan Mayor
+Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+Main CLI Module: Provides command-line interface for the AI Shell Command Assistant.
+
+This module serves as the entry point for the CLI application and handles:
+- Command-line argument parsing using Click
+- User interaction and command flow
+- Integration of AI service with command execution
+- Error handling and user feedback
+- Command history management
+
+The main components are:
+- cli(): The main command group
+- ask(): Handles command generation and execution
+- history(): Displays command history
 """
 import click
 from typing import Tuple

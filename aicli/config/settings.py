@@ -1,4 +1,7 @@
 """
+Copyright (c) 2024 Ryan Mayor
+Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 Settings Module
 
 This module manages the application's configuration, handling both file-based

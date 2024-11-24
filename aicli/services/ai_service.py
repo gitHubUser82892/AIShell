@@ -1,4 +1,7 @@
 """
+Copyright (c) 2024 Ryan Mayor
+Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 AI Service Module
 
 This module handles all interactions with the OpenAI API. It is responsible for
@@ -32,9 +35,11 @@ class AIService:
             raise APIError(f"Failed to initialize OpenAI client: {str(e)}")
     
     def _clean_response(self, text: str) -> str:
-        """Remove markdown code blocks and extra whitespace"""
+        """Remove markdown code blocks, backticks, and extra whitespace"""
         # Remove code block syntax
         text = re.sub(r'```\w*\n|```', '', text)
+        # Remove backticks
+        text = text.replace('`', '')
         # Remove extra whitespace
         text = text.strip()
         return text

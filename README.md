@@ -1,3 +1,10 @@
+"""
+Copyright (c) 2024 Ryan Mayor
+Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+AI Service Module: Handles communication with OpenAI API and command generation.
+"""
+
 # AI Shell Command Assistant
 
 An AI-powered command-line tool that helps generate and execute shell commands from natural language descriptions. This tool uses OpenAI's GPT-4 to convert plain English descriptions into executable shell commands.
@@ -135,7 +142,17 @@ Component Interaction Flow:
 
 ## License
 
-MIT License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### MIT License Summary
+- ✅ Commercial use
+- ✅ Modification
+- ✅ Distribution
+- ✅ Private use
+- ⚠️ No liability
+- ⚠️ No warranty
+
+The MIT License is a permissive license that allows you to do anything with the code as long as you include the original copyright and license notice in any copy of the software/source.
 
 ## Contributing
 
