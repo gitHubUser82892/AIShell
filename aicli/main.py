@@ -1,97 +1,128 @@
 """
-AI-powered Command Line Interface (CLI) Tool
-
-This module serves as the main entry point for the aicli application. It provides
-a command-line interface for interacting with AI to generate and execute shell commands.
-
-Key Components:
-    - CLI command group and subcommands using Click
-    - Integration with AI service for command generation
-    - Command execution capabilities
-    - History management
-
-Usage:
-    aicli ask "your command description"
-    aicli ask -e "your command description"  # Execute immediately
-    aicli ask -x "your command description"  # Get explanation
-    aicli history                           # View command history
-
-Environment Variables:
-    OPENAI_API_KEY: Your OpenAI API key (required if not in config.yaml)
-
-Configuration:
-    ~/.aicli/config.yaml: Configuration file location
-    ~/.aicli/history.json: Command history storage
+Main CLI Module
 """
-
 import click
 from typing import Tuple
 from .services.ai_service import AIService
 from .services.command_executor import CommandExecutor
 from .config.settings import load_config
 from .utils.history_manager import HistoryManager
+from .utils.exceptions import (
+    AICLIError,
+    ConfigurationError,
+    APIError,
+    CommandExecutionError,
+    HistoryError
+)
+
+def init_services() -> Tuple[AIService, CommandExecutor, HistoryManager]:
+    """Initialize all services"""
+    try:
+        config = load_config()
+        return (
+            AIService(config['openai_api_key']),
+            CommandExecutor(),
+            HistoryManager()
+        )
+    except Exception as e:
+        raise ConfigurationError(f"Failed to initialize services: {str(e)}")
 
 @click.group()
-@click.pass_context
-def cli(ctx):
-    """AI-powered command line assistant"""
-    ctx.ensure_object(dict)
-    config = load_config()
-    ctx.obj['config'] = config
-    ctx.obj['ai_service'] = AIService(config['openai_api_key'])
-    ctx.obj['history'] = HistoryManager()
+def cli():
+    """AI-powered command line assistant that converts natural language to shell commands.
+
+    Basic Usage:
+        aicli ask "your command description"    Generate a command
+        aicli ask -x "your description"         Get command with explanation
+        aicli ask -e "your description"         Generate and execute immediately
+        aicli history                          Show command history
+
+    Examples:
+        aicli ask "find all pdf files"
+        aicli ask -x "list large files over 100MB"
+        aicli ask -e "show disk usage in human readable format"
+    """
+    pass
 
 @cli.command()
-@click.argument('query', nargs=-1)
-@click.option('--execute', '-e', is_flag=True, help='Execute the command directly')
-@click.option('--explain', '-x', is_flag=True, help='Get explanation of the command')
-@click.pass_context
-def ask(ctx, query: Tuple[str], execute: bool, explain: bool):
-    """Ask AI for a command based on your description"""
-    query_text = ' '.join(query)
-    ai_service = ctx.obj['ai_service']
-    history = ctx.obj['history']
+@click.argument('query')
+@click.option('-x', '--explain', is_flag=True, help='Get detailed explanation of how the command works')
+@click.option('-e', '--execute', is_flag=True, help='Execute the command immediately without confirmation')
+def ask(query: str, explain: bool, execute: bool):
+    """Convert natural language description into shell command.
 
+    Arguments:
+        QUERY    Your description of what you want to do
+
+    Options:
+        -x, --explain     Show detailed explanation of how the command works
+        -e, --execute     Execute the command immediately without confirmation
+
+    Examples:
+        aicli ask "list files by size"              Simple command generation
+        aicli ask -x "find duplicate files"         Get command with explanation
+        aicli ask -e "show system information"      Generate and execute immediately
+        aicli ask -x -e "compress all jpg files"    Explain and execute
+    """
     try:
-        # Get command from AI
-        command = ai_service.get_command(query_text, explain)
+        ai_service, cmd_executor, history = init_services()
         
-        # Store in history
-        history.add_command(query_text, command)
-
-        # Display result
+        # Get command from AI
+        result = ai_service.get_command(query, explain)
+        
         if explain:
-            click.echo("\nCommand explanation:")
+            command, explanation = result
+            click.echo("\nSuggested command:")
             click.echo(command)
+            click.echo("\nExplanation:")
+            click.echo(explanation)
+            click.echo()
         else:
-            click.secho("\nSuggested command:", fg="green")
-            click.secho(command, fg="yellow")
-
-            if execute:
-                executor = CommandExecutor()
-                executor.run(command)
-            elif click.confirm('\nWould you like to execute this command?'):
-                executor = CommandExecutor()
-                executor.run(command)
-
-    except Exception as e:
+            command = result
+            click.echo("\nSuggested command:")
+            click.echo(command)
+            click.echo()
+        
+        # Add to history (only the command, not the explanation)
+        if not explain:
+            history.add_command(query, command)
+        
+        # Execute if requested or confirmed
+        if execute:
+            cmd_executor.run(command)
+        else:
+            if click.confirm("Would you like to execute this command?"):
+                cmd_executor.run(command)
+                
+    except AICLIError as e:
         click.secho(f"Error: {str(e)}", fg="red", err=True)
+        exit(1)
+    except Exception as e:
+        click.secho(f"Unexpected error: {str(e)}", fg="red", err=True)
+        exit(1)
 
 @cli.command()
-@click.pass_context
-def history(ctx):
+def history():
     """Show command history"""
-    history = ctx.obj['history']
-    commands = history.get_commands()
-    
-    if not commands:
-        click.echo("No commands in history.")
-        return
-
-    click.echo("\nCommand History:")
-    for i, (query, command) in enumerate(commands, 1):
-        click.echo(f"\n{i}. Query: {query}")
-        click.secho(f"   Command: {command}", fg="yellow")
+    try:
+        _, _, history_manager = init_services()
+        history = history_manager.get_history()
+        
+        if not history:
+            click.echo("No command history found.")
+            return
+            
+        click.echo("\nCommand History:")
+        for i, (query, cmd) in enumerate(history, 1):
+            click.echo(f"\n{i}. Query: {query}")
+            click.echo(f"   Command: {cmd}")
+            
+    except AICLIError as e:
+        click.secho(f"Error: {str(e)}", fg="red", err=True)
+        exit(1)
+    except Exception as e:
+        click.secho(f"Unexpected error: {str(e)}", fg="red", err=True)
+        exit(1)
 
 if __name__ == '__main__':
     cli() 

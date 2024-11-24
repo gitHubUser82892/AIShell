@@ -18,25 +18,39 @@ Security Note:
 
 import subprocess
 import click
-import re
+from ..utils.exceptions import CommandExecutionError
 
 class CommandExecutor:
     def run(self, command: str) -> None:
         """Execute the shell command"""
-        # Strip markdown code block formatting if present
-        command = re.sub(r'^```\w*\n|```$', '', command.strip())
-        command = command.strip()
-        
+        if not command:
+            raise CommandExecutionError("Command cannot be empty")
+
         try:
+            # Strip markdown code block formatting if present
+            command = command.strip().replace('```bash', '').replace('```', '')
+            command = command.strip()
+            
             click.echo(f"\nExecuting: {command}\n")
             click.echo("=" * 40)
             click.echo()
             
-            result = subprocess.run(command, shell=True, text=True, capture_output=True)
+            result = subprocess.run(
+                command,
+                shell=True,
+                text=True,
+                capture_output=True,
+                check=True  # Raises CalledProcessError on non-zero exit
+            )
+            
             if result.stdout:
                 click.echo(result.stdout)
             if result.stderr:
-                click.secho(f"Errors:\n{result.stderr}", fg="red", err=True)
+                click.secho(f"Warnings:\n{result.stderr}", fg="yellow", err=True)
                 
+        except subprocess.CalledProcessError as e:
+            raise CommandExecutionError(
+                f"Command failed with exit code {e.returncode}:\n{e.stderr}"
+            )
         except Exception as e:
-            click.secho(f"Error executing command: {str(e)}", fg="red", err=True) 
+            raise CommandExecutionError(f"Error executing command: {str(e)}") 
